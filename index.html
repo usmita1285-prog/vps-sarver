@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud VPS Manager</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%);
+            min-height: 100vh;
+            padding: 30px;
+            color: #0f172a;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            border-radius: 10px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+        .btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #4338ca;
+        }
+        .vps-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .vps-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .vps-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+        }
+        .badge {
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .vps-detail {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 6px;
+            word-break: break-all;
+        }
+        .code-box {
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="glass-card">
+        <h2>Cloud VPS Panel</h2>
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="input-group">
+                <label>RAM</label>
+                <select id="ram">
+                    <option value="1024 MB">1 GB</option>
+                    <option value="2048 MB">2 GB</option>
+                    <option value="4096 MB">4 GB</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Cores</label>
+                <select id="cores">
+                    <option value="1 Core">1 Core</option>
+                    <option value="2 Cores">2 Cores</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Disk</label>
+                <select id="disk">
+                    <option value="10 GB">10 GB</option>
+                    <option value="20 GB">20 GB</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" onclick="createVPS()">Provision VPS</button>
+        <span id="status" style="margin-left: 15px; font-size: 0.9rem; color: #64748b;"></span>
+    </div>
+
+    <h2>Managed Instances</h2>
+    <div class="vps-list" id="vpsList"></div>
+</div>
+
+<script>
+    async function loadServers() {
+        try {
+            const res = await fetch('/api/vps/list');
+            const data = await res.json();
+            const listEl = document.getElementById('vpsList');
+            listEl.innerHTML = '';
+            data.servers.forEach(vps => {
+                const card = document.createElement('div');
+                card.className = 'vps-card';
+                card.innerHTML = `
+                    <div class="vps-title">
+                        <span>${vps.username}</span>
+                        <span class="badge">${vps.status}</span>
+                    </div>
+                    <div class="vps-detail">RAM: ${vps.ram} | Cores: ${vps.cores}</div>
+                    <div class="vps-detail">Password: ${vps.password}</div>
+                    <div class="code-box">${vps.ssh_command}</div>
+                `;
+                listEl.appendChild(card);
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function createVPS() {
+        const username = document.getElementById('username').value.trim();
+        const ram = document.getElementById('ram').value;
+        const cores = document.getElementById('cores').value;
+        const disk = document.getElementById('disk').value;
+        const statusEl = document.getElementById('status');
+
+        if (!username) {
+            alert('Enter username');
+            return;
+        }
+
+        statusEl.innerText = 'Processing...';
+        try {
+            const res = await fetch('/api/vps/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, ram, cores, disk })
+            });
+            const result = await res.json();
+            if (result.success) {
+                statusEl.innerText = 'Created successfully';
+                document.getElementById('username').value = '';
+                loadServers();
+            } else {
+                statusEl.innerText = 'Failed';
+            }
+        } catch (err) {
+            statusEl.innerText = 'Connection error';
+        }
+    }
+
+    loadServers();
+</script>
+</body>
+</html>
